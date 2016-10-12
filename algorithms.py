@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# encoding: utf-8
 
 # --                                                            ; {{{1
 #
@@ -353,6 +354,33 @@ d-ary heap                                                      # {{{2
 
                                                                 # }}}2
 
+Extended Euclidean algorithm                                    # {{{2
+----------------------------
+
+>>> a, b                = 240, 46
+>>> gcd, bezout, quots  = egcd(a, b, verbose = True)
+q=           r=       240 s=         1 t=         0
+q=           r=        46 s=         0 t=         1
+q=         5 r=        10 s=         1 t=        -5
+q=         4 r=         6 s=        -4 t=        21
+q=         1 r=         4 s=         5 t=       -26
+q=         1 r=         2 s=        -9 t=        47
+q=         2 r=         0 s=        23 t=      -120
+>>> gcd
+2
+>>> bezout
+(-9, 47)
+>>> quots
+(-120, 23)
+>>> gcd == a*bezout[0] + b*bezout[1]
+True
+>>> a == gcd*abs(quots[0])
+True
+>>> b == gcd*abs(quots[1])
+True
+
+                                                                # }}}2
+
 
 Links
 =====
@@ -362,6 +390,7 @@ https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm
 https://en.wikipedia.org/wiki/D-ary_heap
 https://en.wikipedia.org/wiki/Depth-first_search
 https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm
+https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm
 https://en.wikipedia.org/wiki/Ford%E2%80%93Fulkerson_algorithm
 https://en.wikipedia.org/wiki/Heapsort
 https://en.wikipedia.org/wiki/Strongly_connected_component
@@ -660,6 +689,24 @@ def heap_increase_key(d, A, i, key):
   A[i] = key
   while i > 0 and A[heap_parent(d, i)] < A[i]:
     p = heap_parent(d, i); A[i], A[p], i = A[p], A[i], p
+
+# === Extended Euclidean algorithm ===
+
+def egcd(a, b, verbose = False):                                # {{{1
+  """Extended Euclidean algorithm.  Returns gcd, Bézout coefficients
+  and quotients of a and b by their greatest common divisor."""
+  r_, r, s_, s, t_, t = a, b, 1, 0, 0, 1
+  if verbose:
+    print("q=%10s r=%10d s=%10d t=%10d" % ("",r_,s_,t_))
+    print("q=%10s r=%10d s=%10d t=%10d" % ("",r, s ,t ))
+  while r != 0:
+    q     = r_ // r
+    r_, r = r, r_ - q*r
+    s_, s = s, s_ - q*s
+    t_, t = t, t_ - q*t
+    if verbose: print("q=%10d r=%10d s=%10d t=%10d" % (q,r,s,t))
+  return r_, (s_, t_), (t, s)
+                                                                # }}}1
 
 # === SAMPLE DATA ===
 
