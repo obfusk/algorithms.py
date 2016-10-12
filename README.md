@@ -1,0 +1,41 @@
+[]: {{{1
+
+    File        : README.md
+    Maintainer  : Felix C. Stegerman <flx@obfusk.net>
+    Date        : 2016-10-12
+
+    Copyright   : Copyright (C) 2016  Felix C. Stegerman
+    Version     : v0.0.1
+
+[]: }}}1
+
+<!-- badge? -->
+
+## Description
+
+algorithms.py - python (2+3) implementations of standard algorithms
+
+See `algorithms.py` for the code (with examples).
+
+<!--
+
+## Examples
+
+...
+
+-->
+
+## TODO
+
+  * more algorithms!
+
+## License
+
+GPLv3+ [1].
+
+## References
+
+[1] GNU General Public License, version 3
+--- https://www.gnu.org/licenses/gpl-3.0.html
+
+[]: ! ( vim: set tw=70 sw=2 sts=2 et fdm=marker : )
