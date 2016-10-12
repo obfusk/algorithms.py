@@ -28,6 +28,7 @@ See `algorithms.py` for the code (with examples).
 ## TODO
 
   * more algorithms!
+  * parameters for `<`, `+`, `min`, etc.
 
 ## License
 
