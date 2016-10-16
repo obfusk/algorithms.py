@@ -5,10 +5,10 @@
 #
 # File        : algorithms.py
 # Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-# Date        : 2016-10-12
+# Date        : 2016-10-16
 #
 # Copyright   : Copyright (C) 2016  Felix C. Stegerman
-# Version     : v0.0.1
+# Version     : v0.0.2
 # License     : GPLv3+
 #
 # --                                                            ; }}}1
@@ -307,6 +307,139 @@ S 456
 
                                                                 # }}}2
 
+MiniMax w/ Alpha-Beta Pruning                                   # {{{2
+-----------------------------
+
+>>> import pprint
+>>> L4 = [0.5,1,0.5,0,0,0.5,1,0,0.5,0,0.5,0,1,1,0.5,1,0,0,1,0.5,1,0,0.5,0.5]
+>>> L3 = [dict(value = None, children = L4[:3]),
+...       1,
+...       dict(value = None, children = L4[3:6]),
+...       dict(value = None, children = L4[6:9]),
+...       0,
+...       dict(value = None, children = L4[9:12]),
+...       dict(value = None, children = L4[12:15]),
+...       dict(value = None, children = L4[15:18]),
+...       0.5,
+...       dict(value = None, children = L4[18:21]),
+...       0.5,
+...       dict(value = None, children = L4[21:])]
+>>> L2 = [dict(value = None, children = L3[:4]),
+...       0,
+...       dict(value = None, children = L3[4:5]),
+...       dict(value = None, children = L3[5:8]),
+...       dict(value = None, children = L3[8:9]),
+...       dict(value = None, children = L3[9:])]
+>>> L1 = [dict(value = None, children = L2[:3]),
+...       dict(value = None, children = L2[3:])]
+>>> T   = dict(value = None, children = L1)
+>>> minimax_alphabeta(T, 0, 1, start_max = False, verbose = True)
+minimax(0, 1)
+  minimax(0, 1)
+    minimax(0, 1)
+      minimax(0, 1)
+        minimax(0, 1)
+        | leaf (value = 0.5)
+      | alpha = 0.5 beta = 1
+        minimax(0.5, 1)
+        | leaf (value = 1)
+      | alpha = 1 beta = 1
+      | pruning; value = 1
+    | alpha = 0 beta = 1
+      minimax(0, 1)
+      | leaf (value = 1)
+    | alpha = 0 beta = 1
+      minimax(0, 1)
+        minimax(0, 1)
+        | leaf (value = 0)
+      | alpha = 0 beta = 1
+        minimax(0, 1)
+        | leaf (value = 0)
+      | alpha = 0 beta = 1
+        minimax(0, 1)
+        | leaf (value = 0.5)
+      | alpha = 0.5 beta = 1
+      | value = 0.5
+    | alpha = 0 beta = 0.5
+      minimax(0, 0.5)
+        minimax(0, 0.5)
+        | leaf (value = 1)
+      | alpha = 1 beta = 0.5
+      | pruning; value = 0.5
+    | alpha = 0 beta = 0.5
+    | value = 0.5
+  | alpha = 0.5 beta = 1
+    minimax(0.5, 1)
+    | leaf (value = 0)
+  | alpha = 0.5 beta = 1
+    minimax(0.5, 1)
+      minimax(0.5, 1)
+      | leaf (value = 0)
+    | alpha = 0.5 beta = 0
+    | pruning; value = 0.5
+  | alpha = 0.5 beta = 1
+  | value = 0.5
+| alpha = 0 beta = 0.5
+  minimax(0, 0.5)
+    minimax(0, 0.5)
+      minimax(0, 0.5)
+        minimax(0, 0.5)
+        | leaf (value = 0)
+      | alpha = 0 beta = 0.5
+        minimax(0, 0.5)
+        | leaf (value = 0.5)
+      | alpha = 0.5 beta = 0.5
+      | pruning; value = 0.5
+    | alpha = 0 beta = 0.5
+      minimax(0, 0.5)
+        minimax(0, 0.5)
+        | leaf (value = 1)
+      | alpha = 1 beta = 0.5
+      | pruning; value = 0.5
+    | alpha = 0 beta = 0.5
+      minimax(0, 0.5)
+        minimax(0, 0.5)
+        | leaf (value = 1)
+      | alpha = 1 beta = 0.5
+      | pruning; value = 0.5
+    | alpha = 0 beta = 0.5
+    | value = 0.5
+  | alpha = 0.5 beta = 0.5
+  | pruning; value = 0.5
+| alpha = 0 beta = 0.5
+| value = 0.5
+0.5
+>>> pprint.pprint(T)
+{'children': [{'children': [{'children': [{'children': [0.5, 1, 0.5],
+                                           'value': 1},
+                                          1,
+                                          {'children': [0, 0, 0.5],
+                                           'value': 0.5},
+                                          {'children': [1, 0, 0.5],
+                                           'value': 0.5}],
+                             'value': 0.5},
+                            0,
+                            {'children': [0], 'value': 0.5}],
+               'value': 0.5},
+              {'children': [{'children': [{'children': [0, 0.5, 0],
+                                           'value': 0.5},
+                                          {'children': [1, 1, 0.5],
+                                           'value': 0.5},
+                                          {'children': [1, 0, 0],
+                                           'value': 0.5}],
+                             'value': 0.5},
+                            {'children': [0.5], 'value': None},
+                            {'children': [{'children': [1, 0.5, 1],
+                                           'value': None},
+                                          0.5,
+                                          {'children': [0, 0.5, 0.5],
+                                           'value': None}],
+                             'value': None}],
+               'value': 0.5}],
+ 'value': 0.5}
+
+                                                                # }}}2
+
 d-ary heap                                                      # {{{2
 ----------
 
@@ -386,6 +519,7 @@ Links
 =====
 
 https://en.wikipedia.org/wiki/A*_search_algorithm
+https://en.wikipedia.org/wiki/Alpha%E2%80%93beta_pruning
 https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm
 https://en.wikipedia.org/wiki/D-ary_heap
 https://en.wikipedia.org/wiki/Depth-first_search
@@ -393,6 +527,7 @@ https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm
 https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm
 https://en.wikipedia.org/wiki/Ford%E2%80%93Fulkerson_algorithm
 https://en.wikipedia.org/wiki/Heapsort
+https://en.wikipedia.org/wiki/Minimax
 https://en.wikipedia.org/wiki/Strongly_connected_component
 https://en.wikipedia.org/wiki/Topological_sorting
 """
@@ -409,7 +544,7 @@ else:
   xrange  = range
                                                                 # }}}1
 
-__version__       = "0.0.1"
+__version__       = "0.0.2"
 
 
 def main(*args):                                                # {{{1
@@ -634,6 +769,44 @@ def a_star(A, B, h, siblings, verbose = False):                 # {{{1
       if verbose: print("  ->", sibling, f_of_s)
       heapq.heappush(frontier, (f_of_s,s_cost,sibling))
   return None
+                                                                # }}}1
+
+# === MiniMax w/ Alpha-Beta Pruning ===
+
+def minimax_alphabeta(node, alpha, beta, leaf_node  = None,     # {{{1
+                      value     = None , children   = None,
+                      set_value = None , start_max  = True,
+                      verbose   = False, pre        = ""):
+  """MiniMax w/ Alpha-Beta Pruning."""
+  leaf_node, value, children, set_value = minimax_defaults( \
+  leaf_node, value, children, set_value)
+  if verbose: print(pre + "minimax({}, {})".format(alpha, beta))
+  if leaf_node(node):
+    if verbose: print(pre + "| leaf (value = {})".format(value(node)))
+    return value(node)
+  for child_node in children(node):
+    x = minimax_alphabeta(child_node, alpha, beta, leaf_node, value,
+                          children, set_value, not start_max, verbose,
+                          pre + "  ")
+    if start_max: alpha = max(alpha, x)
+    else:         beta  = min(beta , x)
+    if verbose: print(pre + "| alpha = {} beta = {}".format(alpha, beta))
+    if alpha >= beta:
+      v = beta if start_max else alpha
+      if verbose: print(pre + "| pruning; value = {}".format(v))
+      set_value(node, v); return v
+  v = alpha if start_max else beta
+  if verbose: print(pre + "| value = {}".format(v))
+  set_value(node, v); return v
+                                                                # }}}1
+
+def minimax_defaults(l, v, c, s):                               # {{{1
+  if l is None: l = lambda x: not isinstance(x, dict)
+  if v is None: v = lambda x: x if l(x) else x["value"]
+  if c is None: c = lambda x: x["children"]
+  if s is None:
+    def s(x, v): x["value"] = v
+  return l, v, c, s
                                                                 # }}}1
 
 # === d-ary heap ===
