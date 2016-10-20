@@ -514,8 +514,29 @@ True
 
                                                                 # }}}2
 
+Lazy List                                                       # {{{2
+---------
+
+>>> list(llist(xrange(0, 10, 2)))
+[0, 2, 4, 6, 8]
+>>> list(llist( n*n for n in itertools.count(0) )[:10])
+[0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+>>> list(llist([0], rec = lambda xs: ( x+1 for x in xs ))[:10])
+[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+>>> list(fibs[:10])
+[0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
+>>> list(fibs[:10:2])
+[0, 1, 3, 8, 21]
+
+                                                                # }}}2
+
 Prime Numbers (Sieve of Eratosthenes)                           # {{{2
 -------------------------------------
+
+>>> list(itertools.islice(mprimes(), 20))
+[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71]
+>>> list(lprimes[:20])
+[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71]
 
 >>> list(primes_up_to(100))
 [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97]
@@ -538,6 +559,7 @@ Prime Numbers (Sieve of Eratosthenes)                           # {{{2
 >>> divisors(2013047831)
 [1, 2013047831]
 
+
 >>> import math
 >>> def naive_divisors(n):
 ...   def f():
@@ -545,22 +567,54 @@ Prime Numbers (Sieve of Eratosthenes)                           # {{{2
 ...       if n % d == 0:
 ...         yield d; yield n // d
 ...   return sorted(set(f()))
+
 >>> import random
 >>> ok = 0
 >>> for n in xrange(10000):
 ...   if divisors(n) == naive_divisors(n): ok += 1
 >>> ok
 10000
+
+On my machine, fastest to slowest is:
+  python 2.7  : naive, memoised, llist, non-memoised erastothenes
+  python 3.5  : memoised, naive, llist, non-memoised erastothenes
+  pypy        : memoised, llist, naive, non-memoised erastothenes
+And pypy is significantly faster (~10x for naive, memoised and llist).
+
 >>> import timeit
->>> a = timeit.timeit(lambda:       divisors(2013047831), number = 100)
->>> b = timeit.timeit(lambda: naive_divisors(2013047831), number = 100)
->>> a < b
+>>> ndivs = naive_divisors
+>>> edivs = lambda x: divisors(x, lambda n: prime_factors(n, erastothenes()))
+>>> mdivs = lambda x: divisors(x, lambda n: prime_factors(n, mprimes()))
+>>> ldivs = lambda x: divisors(x, lambda n: prime_factors(n, lprimes))
+>>> n = timeit.timeit(lambda: ndivs(2013047831), number = 100)
+>>> e = timeit.timeit(lambda: edivs(2013047831), number = 100)
+>>> m = timeit.timeit(lambda: mdivs(2013047831), number = 100)
+>>> l = timeit.timeit(lambda: ldivs(2013047831), number = 100)
+>>> n < m < l < e or m < n < l < e or m < l < n < e
 True
 
->>> import threading, time
+Everything seems to be thread-safe:
+
+>>> import time
+>>> sieve   = _make_prime_sieve() # new data!
 >>> a, b, c = [], [], []
 >>> def f(x):
-...   for p in primes_up_to(100000):
+...   for p in primes_up_to(100000, sieve()):
+...     x.append(p); time.sleep(0.0001)
+>>> t1 = threading.Thread(target = f, args = (a,))
+>>> t2 = threading.Thread(target = f, args = (b,))
+>>> t3 = threading.Thread(target = f, args = (c,))
+>>> t1.start(); t2.start(); t3.start()
+>>> t1.join() ; t2.join() ; t3.join()
+>>> len(a)
+9592
+>>> a == list(primes_up_to(100000)) and a == b and b == c
+True
+
+>>> primes  = llist(erastothenes()) # new data!
+>>> a, b, c = [], [], []
+>>> def f(x):
+...   for p in primes_up_to(100000, primes):
 ...     x.append(p); time.sleep(0.0001)
 >>> t1 = threading.Thread(target = f, args = (a,))
 >>> t2 = threading.Thread(target = f, args = (b,))
@@ -596,12 +650,13 @@ https://en.wikipedia.org/wiki/Topological_sorting
 
 from __future__ import print_function
 
-import argparse, functools, itertools, heapq, operator, sys
+import argparse, functools, itertools, heapq, operator, sys, threading
 from collections import deque
 
 if sys.version_info.major == 2:                                 # {{{1
-  pass
+  izip    = itertools.izip
 else:
+  izip    = zip
   xrange  = range
   reduce  = functools.reduce
                                                                 # }}}1
@@ -943,6 +998,45 @@ def egcd(a, b, verbose = False):                                # {{{1
   return r_, (s_, t_), (t, s)
                                                                 # }}}1
 
+# === Lazy List ===
+
+# NB: copied from https://github.com/obfusk/obfusk.py
+
+class llist(object):                                            # {{{1
+  """Lazy list."""
+  class iterator(object):
+    __slots__ = "l n".split()
+    def __init__(self, l): self.l, self.n = l, 0
+    def __iter__(self): return self
+    def next(self):
+      try:
+        m = self.n; self.n += 1; return self.l[m]
+      except IndexError: raise StopIteration
+    __next__ = next
+  __slots__ = "data it lock".split()
+  def __init__(self, it, rec = None):
+    """Initialise with iterable; for recursive definitions, rec can be
+    passed a lambda that takes the llist and returns an iterable (to
+    chain to the first one)."""
+    self.data, self.lock = [], threading.RLock()
+    self.it = iter(itertools.chain(it, rec(self)) if rec else it)
+  def __iter__(self): return type(self).iterator(self)
+  def __getitem__(self, k):
+    """Item at index or islice."""
+    if isinstance(k, slice):
+      return itertools.islice(self, k.start, k.stop, k.step)
+    elif not isinstance(k, int):
+      raise TypeError("indices must be integers or slices")
+    while k >= len(self.data):
+      try:
+        with self.lock: self.data.append(next(self.it))
+      except StopIteration: break
+    return self.data[k]
+                                                                # }}}1
+
+fibs = llist([0, 1], rec = lambda fibs:
+       ( m+n for m,n in izip(fibs, fibs[1:]) ))
+
 # === Prime Numbers (Sieve of Eratosthenes) ===
 
 def erastothenes():                                             # {{{1
@@ -960,27 +1054,35 @@ def erastothenes():                                             # {{{1
       composites[m] = p
                                                                 # }}}1
 
-def _make_prime_sieve():                                        # {{{1
-  """Generate lazy memoizing prime sieve."""
-  PRIMES, it = [], iter(erastothenes())
+def _make_prime_sieve(sieve = None):                            # {{{1
+  """Generate lazy memoising prime sieve."""
+  PRIMES, lock  = [], threading.Lock()
+  it            = iter(erastothenes() if sieve is None else sieve)
   def primes():
-    """Generates all primes (i.e. lazy, memoizing prime sieve; uses
+    """Generates all primes (i.e. lazy, memoising prime sieve; uses
     erastothenes())."""
-    for p in PRIMES: yield p
+    n = 0
     while True:
-      p = next(it); PRIMES.append(p); yield p
+      with lock:
+        if n < len(PRIMES): p = PRIMES[n]
+        else:
+          p = next(it); PRIMES.append(p)
+      yield p; n += 1
   return primes
                                                                 # }}}1
 
-primes = _make_prime_sieve()
+mprimes = _make_prime_sieve()   # memoised primes
+lprimes = llist(erastothenes()) # lazy primes; slower
 
-def primes_up_to(n):
+def primes_up_to(n, ps = None):
   """Prime numbers <= n."""
-  return itertools.takewhile(lambda p: p <= n, primes())
+  if ps is None: ps = mprimes()
+  return itertools.takewhile(lambda p: p <= n, ps)
 
-def prime_factors(n):                                           # {{{1
+def prime_factors(n, ps = None):                                # {{{1
   """Prime factors of n."""
-  for p in itertools.takewhile(lambda p: p*p <= n, primes()):
+  if ps is None: ps = mprimes()
+  for p in itertools.takewhile(lambda p: p*p <= n, ps):
     while n > 1:
       q, r = divmod(n, p)
       if r != 0: break
@@ -989,9 +1091,9 @@ def prime_factors(n):                                           # {{{1
   if n != 1: yield n
                                                                 # }}}1
 
-def divisors(n):
+def divisors(n, factors = None):
   """Divisors of n (sorted)."""
-  ps = tuple(prime_factors(n))
+  ps = tuple((prime_factors if factors is None else factors)(n))
   return sorted(set( reduce(operator.mul, xs, 1)
                      for r in xrange(len(ps)+1)
                      for xs in itertools.combinations(ps, r) ))

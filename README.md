@@ -26,6 +26,15 @@ See `algorithms.py` for the code (with examples).
 
 -->
 
+## Specs & Docs
+
+```bash
+$ python algorithms.py -v               # run tests
+$ python -mcoverage run algorithms.py   # test coverage
+$ python -mcoverage html                # generate html report
+$ pydoc algorithms.py                   # view docs
+```
+
 ## TODO
 
   * more algorithms! (like bfs, ternary search, knapsack, markov
