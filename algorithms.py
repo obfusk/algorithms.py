@@ -5,10 +5,10 @@
 #
 # File        : algorithms.py
 # Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-# Date        : 2016-10-16
+# Date        : 2016-10-20
 #
 # Copyright   : Copyright (C) 2016  Felix C. Stegerman
-# Version     : v0.0.2
+# Version     : v0.0.3
 # License     : GPLv3+
 #
 # --                                                            ; }}}1
@@ -514,6 +514,66 @@ True
 
                                                                 # }}}2
 
+Prime Numbers (Sieve of Eratosthenes)                           # {{{2
+-------------------------------------
+
+>>> list(primes_up_to(100))
+[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97]
+
+>>> list(prime_factors(1))
+[]
+>>> list(prime_factors(11))
+[11]
+>>> list(prime_factors(100))
+[2, 2, 5, 5]
+>>> list(prime_factors(982139867123097))
+[3, 162629, 2013047831]
+
+>>> divisors(1)
+[1]
+>>> divisors(60)
+[1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60]
+>>> divisors(100)
+[1, 2, 4, 5, 10, 20, 25, 50, 100]
+>>> divisors(2013047831)
+[1, 2013047831]
+
+>>> import math
+>>> def naive_divisors(n):
+...   def f():
+...     for d in xrange(1, int(math.sqrt(n))+2):
+...       if n % d == 0:
+...         yield d; yield n // d
+...   return sorted(set(f()))
+>>> import random
+>>> ok = 0
+>>> for n in xrange(10000):
+...   if divisors(n) == naive_divisors(n): ok += 1
+>>> ok
+10000
+>>> import timeit
+>>> a = timeit.timeit(lambda:       divisors(2013047831), number = 100)
+>>> b = timeit.timeit(lambda: naive_divisors(2013047831), number = 100)
+>>> a < b
+True
+
+>>> import threading, time
+>>> a, b, c = [], [], []
+>>> def f(x):
+...   for p in primes_up_to(100000):
+...     x.append(p); time.sleep(0.0001)
+>>> t1 = threading.Thread(target = f, args = (a,))
+>>> t2 = threading.Thread(target = f, args = (b,))
+>>> t3 = threading.Thread(target = f, args = (c,))
+>>> t1.start(); t2.start(); t3.start()
+>>> t1.join() ; t2.join() ; t3.join()
+>>> len(a)
+9592
+>>> a == list(primes_up_to(100000)) and a == b and b == c
+True
+
+                                                                # }}}2
+
 
 Links
 =====
@@ -528,6 +588,7 @@ https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm
 https://en.wikipedia.org/wiki/Ford%E2%80%93Fulkerson_algorithm
 https://en.wikipedia.org/wiki/Heapsort
 https://en.wikipedia.org/wiki/Minimax
+https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes
 https://en.wikipedia.org/wiki/Strongly_connected_component
 https://en.wikipedia.org/wiki/Topological_sorting
 """
@@ -535,26 +596,27 @@ https://en.wikipedia.org/wiki/Topological_sorting
 
 from __future__ import print_function
 
-import argparse, heapq, sys
+import argparse, functools, itertools, heapq, operator, sys
 from collections import deque
 
 if sys.version_info.major == 2:                                 # {{{1
   pass
 else:
   xrange  = range
+  reduce  = functools.reduce
                                                                 # }}}1
 
-__version__       = "0.0.2"
+__version__       = "0.0.3"
 
 
 def main(*args):                                                # {{{1
-  p = argument_parser(); n = p.parse_args(args)
+  p = _argument_parser(); n = p.parse_args(args)
   import doctest
   doctest.testmod(verbose = n.verbose)
   return 0
                                                                 # }}}1
 
-def argument_parser():                                          # {{{1
+def _argument_parser():                                         # {{{1
   p = argparse.ArgumentParser(description = "cryptanalysis")
   p.add_argument("--version", action = "version",
                  version = "%(prog)s {}".format(__version__))
@@ -880,6 +942,59 @@ def egcd(a, b, verbose = False):                                # {{{1
     if verbose: print("q=%10d r=%10d s=%10d t=%10d" % (q,r,s,t))
   return r_, (s_, t_), (t, s)
                                                                 # }}}1
+
+# === Prime Numbers (Sieve of Eratosthenes) ===
+
+def erastothenes():                                             # {{{1
+  """All prime numbers (generated using Sieve of Eratosthenes;
+  adapted from Python Cookbook)."""
+  composites = {} # maps composite ints to first found prime factor
+  yield 2
+  for k in itertools.count(3, 2):
+    p = composites.pop(k, None)
+    if p is None:
+      composites[k*k] = k; yield k
+    else:
+      m = p + k
+      while m in composites or not (m&1): m += p
+      composites[m] = p
+                                                                # }}}1
+
+def _make_prime_sieve():                                        # {{{1
+  """Generate lazy memoizing prime sieve."""
+  PRIMES, it = [], iter(erastothenes())
+  def primes():
+    """Generates all primes (i.e. lazy, memoizing prime sieve; uses
+    erastothenes())."""
+    for p in PRIMES: yield p
+    while True:
+      p = next(it); PRIMES.append(p); yield p
+  return primes
+                                                                # }}}1
+
+primes = _make_prime_sieve()
+
+def primes_up_to(n):
+  """Prime numbers <= n."""
+  return itertools.takewhile(lambda p: p <= n, primes())
+
+def prime_factors(n):                                           # {{{1
+  """Prime factors of n."""
+  for p in itertools.takewhile(lambda p: p*p <= n, primes()):
+    while n > 1:
+      q, r = divmod(n, p)
+      if r != 0: break
+      n = q; yield p
+    if n == 1: break
+  if n != 1: yield n
+                                                                # }}}1
+
+def divisors(n):
+  """Divisors of n (sorted)."""
+  ps = tuple(prime_factors(n))
+  return sorted(set( reduce(operator.mul, xs, 1)
+                     for r in xrange(len(ps)+1)
+                     for xs in itertools.combinations(ps, r) ))
 
 # === SAMPLE DATA ===
 

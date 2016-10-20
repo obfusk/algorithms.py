@@ -2,14 +2,15 @@
 
     File        : README.md
     Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-    Date        : 2016-10-12
+    Date        : 2016-10-20
 
     Copyright   : Copyright (C) 2016  Felix C. Stegerman
-    Version     : v0.0.2
+    Version     : v0.0.3
 
 []: }}}1
 
 <!-- badge? -->
+[![Build Status](https://travis-ci.org/obfusk/algorithms.py.png)](https://travis-ci.org/obfusk/algorithms.py)
 
 ## Description
 
@@ -27,8 +28,9 @@ See `algorithms.py` for the code (with examples).
 
 ## TODO
 
-  * more algorithms!
-  * parameters for `<`, `+`, `min`, etc.
+  * more algorithms! (like bfs, ternary search, knapsack, markov
+    chains, ...)
+  * parameters for zero, `<`, `+`, `min`, etc.
 
 ## License
 
