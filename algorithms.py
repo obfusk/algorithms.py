@@ -1002,6 +1002,7 @@ def egcd(a, b, verbose = False):                                # {{{1
 # === Lazy List ===
 
 # NB: copied from https://github.com/obfusk/obfusk.py
+# TODO: import instead
 
 class llist(object):                                            # {{{1
   """Lazy list."""
@@ -1019,7 +1020,7 @@ class llist(object):                                            # {{{1
     """Initialise with iterable; for recursive definitions, rec can be
     passed a lambda that takes the llist and returns an iterable (to
     chain to the first one)."""
-    self.data, self.lock = [], threading.RLock()
+    self.data, self.it, self.lock = [], None, threading.RLock()
     self.it = iter(itertools.chain(it, rec(self)) if rec else it)
   def __iter__(self): return type(self).iterator(self)
   def __getitem__(self, k):
@@ -1027,9 +1028,11 @@ class llist(object):                                            # {{{1
     if isinstance(k, slice):
       return itertools.islice(self, k.start, k.stop, k.step)
     elif not isinstance(k, int):
-      raise TypeError("indices must be integers or slices")
+      raise TypeError("llist indices must be integers or slices")
     while k >= len(self.data):
       try:
+        if self.it is None:
+          raise ValueError("llist: recursion before initialisation")
         with self.lock: self.data.append(next(self.it))
       except StopIteration: break
     return self.data[k]
