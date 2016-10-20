@@ -576,9 +576,10 @@ Prime Numbers (Sieve of Eratosthenes)                           # {{{2
 10000
 
 On my machine, fastest to slowest is:
-  python 2.7  : naive, memoised, llist, non-memoised erastothenes
-  python 3.5  : memoised, naive, llist, non-memoised erastothenes
-  pypy        : memoised, llist, naive, non-memoised erastothenes
+  python 2.7    : naive, memoised, llist, non-memoised erastothenes
+  python 3.5    : memoised, naive, llist, non-memoised erastothenes
+  pypy          : memoised, llist, naive, non-memoised erastothenes
+  pypy3 (travis): naive, llist, memoised, non-memoised erastothenes
 And pypy is significantly faster (~10x for naive, memoised and llist).
 
 >>> import timeit
@@ -590,7 +591,7 @@ And pypy is significantly faster (~10x for naive, memoised and llist).
 >>> e = timeit.timeit(lambda: edivs(2013047831), number = 100)
 >>> m = timeit.timeit(lambda: mdivs(2013047831), number = 100)
 >>> l = timeit.timeit(lambda: ldivs(2013047831), number = 100)
->>> n < m < l < e or m < n < l < e or m < l < n < e
+>>> n < m < l < e or m < n < l < e or m < l < n < e or n < l < m < e
 True
 
 Everything seems to be thread-safe:
