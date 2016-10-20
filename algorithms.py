@@ -612,8 +612,8 @@ __version__       = "0.0.3"
 def main(*args):                                                # {{{1
   p = _argument_parser(); n = p.parse_args(args)
   import doctest
-  doctest.testmod(verbose = n.verbose)
-  return 0
+  failures, tests = doctest.testmod(verbose = n.verbose)
+  return 0 if failures == 0 else 1
                                                                 # }}}1
 
 def _argument_parser():                                         # {{{1
