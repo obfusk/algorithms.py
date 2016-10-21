@@ -260,40 +260,16 @@ L 152
 M 231
   -> D 347
   -> L 292
-L 292
-  -> M 371
-  -> T 435
 T 295
   -> A 435
   -> L 374
 D 347
   -> C 456
   -> M 381
-M 371
-  -> D 487
-  -> L 432
-L 374
-  -> M 453
-  -> T 517
-M 381
-  -> D 497
-  -> L 442
-L 432
-  -> M 511
-  -> T 575
 A 435
   -> S 456
   -> T 531
   -> Z 491
-T 435
-  -> A 575
-  -> L 514
-L 442
-  -> M 521
-  -> T 585
-M 453
-  -> D 569
-  -> L 514
 C 456
   -> D 587
   -> P 483
@@ -877,9 +853,11 @@ def transpose(G):
 
 def a_star(A, B, h, siblings, verbose = False):                 # {{{1
   """A* search."""
-  frontier = []; heapq.heappush(frontier, (0+h(A),0,A))
+  frontier = []; seen = set(); heapq.heappush(frontier, (0+h(A),0,A))
   while frontier:
     f_of_node, cost, node = heapq.heappop(frontier)
+    if node in seen: continue
+    seen.add(node)
     if node == B: return (node, cost)
     if verbose: print(node, f_of_node)
     for sibling, cost_from_node in siblings(node):
