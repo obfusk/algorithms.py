@@ -1,30 +1,29 @@
 import sys
 from collections import deque
 
-def dinic(G, s, t, c, after_pass = None):                       # {{{1
+def dinic(c, s, t):                                             # {{{1
   """Dinic's algorithm."""
-  V, E = G; f = {} # residual/level graph w/ "reverse" edges
-  for u in V:
+  f = {} # residual/level graph w/ "reverse" edges
+  for u in c:
     f[u] = {}
-    for v in E[u]: f[u][v] = dict(cap = c[u][v], flo = 0)
-  for u in V:
-    for v in E[u]: f.setdefault(v, {})\
-                    .setdefault(u, dict(cap = 0, flo = 0))
-  L = dinic_levels(f, s)
+    for v in c[u].keys(): f[u][v] = dict(cap = c[u][v], flo = 0)
+  for u in c:
+    for v in c[u].keys(): f.setdefault(v, {})\
+                           .setdefault(u, dict(cap = 0, flo = 0))
+  L = dinic_levels(f, s, t)
   while L.get(t, None) is not None:
-    dinic_blocking_flow(L, f, s, t); L = dinic_levels(f, s)
-    if after_pass: after_pass(f, L)
+    dinic_blocking_flow(L, f, s, t); L = dinic_levels(f, s, t)
   return f, sum( f[s][u]["flo"] for u in f[s].keys() )
                                                                 # }}}1
 
-def dinic_levels(f, s):                                         # {{{1
-  L, seen, q = { s:0 }, set(), deque([(s,0)])
+def dinic_levels(f, s, t):                                      # {{{1
+  L, q = { s:0 }, deque([(s,0)])
   while q:
     u, n = q.popleft()
     for v in f[u].keys():
-      if f[u][v]["cap"] - f[u][v]["flo"] > 0:
-        if not v in seen:
-          q.append((v,n+1)); seen.add(v)
+      if f[u][v]["cap"] - f[u][v]["flo"] > 0 and not v in L:
+        L[v] = n+1; q.append((v,n+1))
+        if v == t: return L
   return L
                                                                 # }}}1
 

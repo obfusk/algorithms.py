@@ -78,7 +78,7 @@ Dinic's algorithm                                               # {{{2
 >>> # {{{ {{{ {{{ fix vim folds
 >>> from pprint import pprint
 >>> def after_pass(f, L): pprint(dict(f = f, L = L))
->>> _, max_flow = dinic(G, s, t, c, after_pass = after_pass)
+>>> _, max_flow = dinic(c, s, t, after_pass = after_pass)
 {'L': {'s': 0, 't': 3, 'u': 1, 'v': 1, 'x': 1, 'y': 2, 'z': 2},
  'f': {'s': {'u': {'cap': 15, 'flo': 0},
              'v': {'cap': 5, 'flo': 0},
@@ -98,7 +98,7 @@ Dinic's algorithm                                               # {{{2
              'y': {'cap': 5, 'flo': 0}},
        'y': {'t': {'cap': 15, 'flo': 0}, 'x': {'cap': 0, 'flo': 0}},
        'z': {'t': {'cap': 10, 'flo': 0}, 'v': {'cap': 0, 'flo': 0}}}}
-{'L': {'s': 0, 't': 4, 'u': 1, 'v': 2, 'x': 1, 'y': 5, 'z': 3},
+{'L': {'s': 0, 't': 4, 'u': 1, 'v': 2, 'x': 1, 'z': 3},
  'f': {'s': {'u': {'cap': 15, 'flo': 0},
              'v': {'cap': 5, 'flo': 5},
              'x': {'cap': 12, 'flo': 10}},
@@ -139,16 +139,14 @@ Dinic's algorithm                                               # {{{2
 >>> max_flow
 18
 
->>> V = "s1234t"
+>>> s, t = "st"
 >>> c = { 's': { '1': 10, '2': 10 },
 ...       '1': { '2': 2, '3': 4, '4': 8 },
 ...       '2': { '4': 9 },
 ...       '3': { 't': 10 },
 ...       '4': { '3': 6, 't': 10 },
 ...       't': {} }
->>> E = dict( (k,sorted(v.keys())) for k,v in c.items() )
->>> G = (V,E); s, t = "st"
->>> f, max_flow = dinic(G, s, t, c)
+>>> f, max_flow = dinic(c, s, t)
 >>> # TODO: (deterministic!) examples of after_pass
 >>> max_flow
 19
@@ -237,30 +235,30 @@ def min_cut(V, f, s, neighbors, rneighbors, cap):               # {{{1
 
 # === Dinic's algorithm ===
 
-def dinic(G, s, t, c, after_pass = None):                       # {{{1
+def dinic(c, s, t, after_pass = None):                          # {{{1
   """Dinic's algorithm."""
-  V, E = G; f = {} # residual/level graph w/ "reverse" edges
-  for u in V:
+  f = {} # residual/level graph w/ "reverse" edges
+  for u in c:
     f[u] = {}
-    for v in E[u]: f[u][v] = dict(cap = c[u][v], flo = 0)
-  for u in V:
-    for v in E[u]: f.setdefault(v, {})\
-                    .setdefault(u, dict(cap = 0, flo = 0))
-  L = dinic_levels(f, s)
+    for v in c[u].keys(): f[u][v] = dict(cap = c[u][v], flo = 0)
+  for u in c:
+    for v in c[u].keys(): f.setdefault(v, {})\
+                           .setdefault(u, dict(cap = 0, flo = 0))
+  L = dinic_levels(f, s, t)
   while L.get(t, None) is not None:
-    dinic_blocking_flow(L, f, s, t); L = dinic_levels(f, s)
+    dinic_blocking_flow(L, f, s, t); L = dinic_levels(f, s, t)
     if after_pass: after_pass(f, L)
   return f, sum( f[s][u]["flo"] for u in f[s].keys() )
                                                                 # }}}1
 
-def dinic_levels(f, s):                                         # {{{1
-  L, seen, q = { s:0 }, set(), deque([(s,0)])
+def dinic_levels(f, s, t):                                      # {{{1
+  L, q = { s:0 }, deque([(s,0)])
   while q:
     u, n = q.popleft()
     for v in f[u].keys():
-      if f[u][v]["cap"] - f[u][v]["flo"] > 0:
-        if not v in seen:
-          q.append((v,n+1)); seen.add(v)
+      if f[u][v]["cap"] - f[u][v]["flo"] > 0 and not v in L:
+        L[v] = n+1; q.append((v,n+1))
+        if v == t: return L
   return L
                                                                 # }}}1
 
