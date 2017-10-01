@@ -257,10 +257,10 @@ def dinic_levels(f, s):                                         # {{{1
   L, seen, q = { s:0 }, set(), deque([(s,0)])
   while q:
     u, n = q.popleft()
-    if u in seen: continue
-    seen.add(u); L[u] = n
     for v in f[u].keys():
-      if f[u][v]["cap"] - f[u][v]["flo"] > 0: q.append((v,n+1))
+      if f[u][v]["cap"] - f[u][v]["flo"] > 0:
+        if not v in seen:
+          q.append((v,n+1)); seen.add(v)
   return L
                                                                 # }}}1
 
