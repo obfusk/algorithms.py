@@ -74,7 +74,71 @@ b = 3 path = [('s', 'u', False), ('u', 'v', False), ('v', 'z', False), ('z', 't'
 Dinic's algorithm                                               # {{{2
 -----------------
 
+>>> # ... (continues from Ford-Fulkerson example)
+>>> # {{{ {{{ {{{ fix vim folds
 >>> from pprint import pprint
+>>> def after_pass(f, L): pprint(dict(f = f, L = L))
+>>> _, max_flow = dinic(G, s, t, c, after_pass = after_pass)
+{'L': {'s': 0, 't': 3, 'u': 1, 'v': 1, 'x': 1, 'y': 2, 'z': 2},
+ 'f': {'s': {'u': {'cap': 15, 'flo': 0},
+             'v': {'cap': 5, 'flo': 0},
+             'x': {'cap': 12, 'flo': 5}},
+       't': {'x': {'cap': 0, 'flo': -5},
+             'y': {'cap': 0, 'flo': 0},
+             'z': {'cap': 0, 'flo': 0}},
+       'u': {'s': {'cap': 0, 'flo': 0},
+             'v': {'cap': 10, 'flo': 0},
+             'x': {'cap': 8, 'flo': 0}},
+       'v': {'s': {'cap': 0, 'flo': 0},
+             'u': {'cap': 0, 'flo': 0},
+             'z': {'cap': 8, 'flo': 0}},
+       'x': {'s': {'cap': 0, 'flo': -5},
+             't': {'cap': 5, 'flo': 5},
+             'u': {'cap': 0, 'flo': 0},
+             'y': {'cap': 5, 'flo': 0}},
+       'y': {'t': {'cap': 15, 'flo': 0}, 'x': {'cap': 0, 'flo': 0}},
+       'z': {'t': {'cap': 10, 'flo': 0}, 'v': {'cap': 0, 'flo': 0}}}}
+{'L': {'s': 0, 't': 4, 'u': 1, 'v': 2, 'x': 1, 'y': 5, 'z': 3},
+ 'f': {'s': {'u': {'cap': 15, 'flo': 0},
+             'v': {'cap': 5, 'flo': 5},
+             'x': {'cap': 12, 'flo': 10}},
+       't': {'x': {'cap': 0, 'flo': -5},
+             'y': {'cap': 0, 'flo': -5},
+             'z': {'cap': 0, 'flo': -5}},
+       'u': {'s': {'cap': 0, 'flo': 0},
+             'v': {'cap': 10, 'flo': 0},
+             'x': {'cap': 8, 'flo': 0}},
+       'v': {'s': {'cap': 0, 'flo': -5},
+             'u': {'cap': 0, 'flo': 0},
+             'z': {'cap': 8, 'flo': 5}},
+       'x': {'s': {'cap': 0, 'flo': -10},
+             't': {'cap': 5, 'flo': 5},
+             'u': {'cap': 0, 'flo': 0},
+             'y': {'cap': 5, 'flo': 5}},
+       'y': {'t': {'cap': 15, 'flo': 5}, 'x': {'cap': 0, 'flo': -5}},
+       'z': {'t': {'cap': 10, 'flo': 5}, 'v': {'cap': 0, 'flo': -5}}}}
+{'L': {'s': 0, 'u': 1, 'v': 2, 'x': 1},
+ 'f': {'s': {'u': {'cap': 15, 'flo': 3},
+             'v': {'cap': 5, 'flo': 5},
+             'x': {'cap': 12, 'flo': 10}},
+       't': {'x': {'cap': 0, 'flo': -5},
+             'y': {'cap': 0, 'flo': -5},
+             'z': {'cap': 0, 'flo': -8}},
+       'u': {'s': {'cap': 0, 'flo': -3},
+             'v': {'cap': 10, 'flo': 3},
+             'x': {'cap': 8, 'flo': 0}},
+       'v': {'s': {'cap': 0, 'flo': -5},
+             'u': {'cap': 0, 'flo': -3},
+             'z': {'cap': 8, 'flo': 8}},
+       'x': {'s': {'cap': 0, 'flo': -10},
+             't': {'cap': 5, 'flo': 5},
+             'u': {'cap': 0, 'flo': 0},
+             'y': {'cap': 5, 'flo': 5}},
+       'y': {'t': {'cap': 15, 'flo': 5}, 'x': {'cap': 0, 'flo': -5}},
+       'z': {'t': {'cap': 10, 'flo': 8}, 'v': {'cap': 0, 'flo': -8}}}}
+>>> max_flow
+18
+
 >>> V = "s1234t"
 >>> c = { 's': { '1': 10, '2': 10 },
 ...       '1': { '2': 2, '3': 4, '4': 8 },
@@ -84,9 +148,8 @@ Dinic's algorithm                                               # {{{2
 ...       't': {} }
 >>> E = dict( (k,sorted(v.keys())) for k,v in c.items() )
 >>> G = (V,E); s, t = "st"
->>> def after_pass(f, L): pprint(dict(f = f, L = L))
->>> f, max_flow = dinic(G, s, t, c, after_pass = after_pass)
-TODO
+>>> f, max_flow = dinic(G, s, t, c)
+>>> # TODO: (deterministic!) examples of after_pass
 >>> max_flow
 19
 
