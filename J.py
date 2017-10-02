@@ -51,17 +51,16 @@ def dinic_blocking_flow(L, f, s, t):                            # {{{1
                                                                 # }}}1
 
 sys.stdin.readline()
-ss = list(map(int, sys.stdin.readline().split()))  # 1-based
-qq = list(map(int, sys.stdin.readline().split()))
-
-V, c = list("st"), dict(s = {}, t = {}); s, t = "st"
+ss  = list(map(int, sys.stdin.readline().split()))  # 1-based
+qq  = list(map(int, sys.stdin.readline().split()))
+c   = dict(s = {}, t = {}); s, t = "st"
 
 for i, (d, *data) in enumerate( map(int, line.split())
                                 for line in sys.stdin ):
-  w = "{}_w".format(i); V.append(w); c[w] = { t:d }
+  w = "{}_w".format(i); c[w] = { t:d }
   for j, (a, q) in enumerate(zip(data, ss)):
-    u = "{}_s{}_q{}".format(i, j, q-1); V.append(u)
-    v = "{}_q{}"    .format(i,    q-1); V.append(v)
+    u = "{}_s{}_q{}".format(i, j, q-1)
+    v = "{}_q{}"    .format(i,    q-1)
     c[s][u] = a; c[u] = { v: qq[q-1] }; c[v] = { w: min(qq[q-1], d) }
     if i > 0:
       v_ = "{}_q{}".format(i-1, q-1); c[v_][u] = qq[q-1]
@@ -69,8 +68,7 @@ for i, (d, *data) in enumerate( map(int, line.split())
 # from pprint import pprint
 # pprint(c)
 
-E = dict( (k,list(v.keys())) for k,v in c.items() )
-f, _ = dinic((V,E), s, t, c)
+f, _ = dinic(c, s, t)
 
 for u in f[s].keys():
   if f[s][u]["flo"] != f[s][u]["cap"]:

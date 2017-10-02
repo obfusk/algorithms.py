@@ -18,7 +18,7 @@ Ford-Fulkerson algorithm                                        # {{{2
 ...          y = dict(t = 15),
 ...          z = dict(t = 10),
 ...          t = dict())
->>> E = dict( (k,sorted(v.keys())) for k,v in c.items() )
+>>> E = dict( (k,sorted(v)) for k,v in c.items() )
 >>> G = (V,E); s, t = "st"
 >>> def after_pass(path, b, f):
 ...   print("b =", b, "path =", path); pprint.pprint(f)
@@ -78,7 +78,7 @@ Dinic's algorithm                                               # {{{2
 >>> # {{{ {{{ {{{ fix vim folds
 >>> from pprint import pprint
 >>> def after_pass(f, L): pprint(dict(f = f, L = L))
->>> _, max_flow = dinic(c, s, t, after_pass = after_pass)
+>>> f = dinic(c, s, t, after_pass = after_pass)
 {'L': {'s': 0, 't': 3, 'u': 1, 'v': 1, 'x': 1, 'y': 2, 'z': 2},
  'f': {'s': {'u': {'cap': 15, 'flo': 0},
              'v': {'cap': 5, 'flo': 0},
@@ -136,7 +136,7 @@ Dinic's algorithm                                               # {{{2
              'y': {'cap': 5, 'flo': 5}},
        'y': {'t': {'cap': 15, 'flo': 5}, 'x': {'cap': 0, 'flo': -5}},
        'z': {'t': {'cap': 10, 'flo': 8}, 'v': {'cap': 0, 'flo': -8}}}}
->>> max_flow
+>>> dinic_max_flow(f, s)
 18
 
 >>> s, t = "st"
@@ -146,9 +146,9 @@ Dinic's algorithm                                               # {{{2
 ...       '3': { 't': 10 },
 ...       '4': { '3': 6, 't': 10 },
 ...       't': {} }
->>> f, max_flow = dinic(c, s, t)
+>>> f = dinic(c, s, t)
 >>> # TODO: (deterministic!) examples of after_pass
->>> max_flow
+>>> dinic_max_flow(f, s)
 19
 
                                                                 # }}}2
@@ -235,36 +235,40 @@ def min_cut(V, f, s, neighbors, rneighbors, cap):               # {{{1
 
 # === Dinic's algorithm ===
 
+def dinic_max_flow(f, s):
+  return sum( fsu["flo"] for fsu in f[s].values() )
+
 def dinic(c, s, t, after_pass = None):                          # {{{1
   """Dinic's algorithm."""
   f = {} # residual/level graph w/ "reverse" edges
-  for u in c:
-    f[u] = {}
-    for v in c[u].keys(): f[u][v] = dict(cap = c[u][v], flo = 0)
-  for u in c:
-    for v in c[u].keys(): f.setdefault(v, {})\
-                           .setdefault(u, dict(cap = 0, flo = 0))
+  for u, cu in c.items():
+    fu = f[u] = {}
+    for v, cuv in cu.items(): fu[v] = dict(cap = cuv, flo = 0)
+  for u, cu in c.items():
+    for v in cu: f.setdefault(v, {})\
+                  .setdefault(u, dict(cap = 0, flo = 0))
   L = dinic_levels(f, s, t)
   while L.get(t, None) is not None:
     dinic_blocking_flow(L, f, s, t); L = dinic_levels(f, s, t)
     if after_pass: after_pass(f, L)
-  return f, sum( f[s][u]["flo"] for u in f[s].keys() )
+  return f
                                                                 # }}}1
 
 def dinic_levels(f, s, t):                                      # {{{1
   L, q = { s:0 }, deque([(s,0)])
   while q:
     u, n = q.popleft()
-    for v in f[u].keys():
-      if f[u][v]["cap"] - f[u][v]["flo"] > 0 and not v in L:
+    for v, fuv in f[u].items():
+      if fuv["cap"] - fuv["flo"] > 0 and not v in L:
         L[v] = n+1; q.append((v,n+1))
         if v == t: return L
   return L
                                                                 # }}}1
 
+# TODO: optimise sup, dem?
 def dinic_blocking_flow(L, f, s, t):                            # {{{1
   st, sup, dem = [(s,None,False)], {}, {}
-  sup[s] = dem[t] = sum( f[s][u]["cap"] for u in f[s].keys() )
+  sup[s] = dem[t] = sum( fsu["cap"] for fsu in f[s].values() )
   while st:
     u, w, b = st.pop()
     if not b:
@@ -274,13 +278,13 @@ def dinic_blocking_flow(L, f, s, t):                            # {{{1
       else:
         st.append((u,w,True))
         if w: sup[u] = min(sup[w], f[w][u]["cap"] - f[w][u]["flo"])
-        for v in f[u].keys():
+        for v in f[u]:
           if L.get(v, -1) > L[u]: st.append((v,u,False))
     else:
       dem[u] = 0
-      for v in f[u].keys():
+      for v, fuv in f[u].items():
         if L.get(v, -1) > L[u]:
-          f[u][v]["flo"] += dem[v]; f[v][u]["flo"] -= dem[v]
+          fuv["flo"] += dem[v]; f[v][u]["flo"] -= dem[v]
           dem[u] += dem[v]; dem[v] = 0
       if w: sup[w] -= dem[u]
                                                                 # }}}1
