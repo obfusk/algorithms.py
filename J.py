@@ -28,21 +28,16 @@ def dinic_levels(f, s, t):                                      # {{{1
                                                                 # }}}1
 
 def dinic_blocking_flow(L, f, s, t):                            # {{{1
-  seen = set()
   def dfs(u, flo):
     if u == s: return flo
-    rem = flo
     for v in f[u]:
       c = f[v][u]["cap"] - f[v][u]["flo"]
-      if c > 0 and v not in seen and L.get(v, -2) == L[u]-1:
-        flo_ = dfs(v, min(rem, c))
+      if c > 0 and L.get(v, -2) == L[u]-1:
+        flo_ = dfs(v, min(flo, c))
         if flo_:
           f[v][u]["flo"] += flo_; f[u][v]["flo"] -= flo_
-          # return flo_
-          if flo_ < min(rem, c): seen.add(v)
-          rem -= flo_
-          if rem == 0: return flo
-    return flo - rem
+          return flo_
+    return 0
   dfs(t, sum( fsu["cap"] for fsu in f[s].values() ))
                                                                 # }}}1
 
