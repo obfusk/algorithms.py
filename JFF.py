@@ -37,24 +37,19 @@ s2q = [ int(x)-1 for x in sys.stdin.readline().split() ]
 qsz = list(map(int, sys.stdin.readline().split()))
 
 c   = dict(s = {}, t = {}); s, t = "st"
-V   = list("st")
 
 for i, (d, *data) in enumerate( map(int, line.split())
                                 for line in sys.stdin ):
   w = "{}_w".format(i); c[w] = { t:d }
-  V += [w]
   for j, (a, q) in enumerate(zip(data, s2q)):
     u, v = "{}_q{}".format(i, q), "{}_q{}_".format(i, q)
     c[s].setdefault(u, 0); c[s][u] += a
     c[u] = { v: qsz[q] }; c[v] = { w: min(qsz[q], d) }
     if i > 0:
       v_ = "{}_q{}_".format(i-1, q); c[v_][u] = qsz[q]
-    V += [u, v]
 
 # from pprint import pprint; pprint(c)
 
-E = dict( (k,sorted(v)) for k,v in c.items() )
-G = (V,E)
 f = ford_fulkerson(c, s, t)
 
 for fsu in f[s].values():

@@ -27,25 +27,66 @@ def dinic_levels(f, s, t):                                      # {{{1
   return L
                                                                 # }}}1
 
-# TODO: optimise sup, dem?
 def dinic_blocking_flow(L, f, s, t):                            # {{{1
-  st, sup, dem = [(s,None,False)], {}, {}
-  sup[s] = dem[t] = sum( fsu["cap"] for fsu in f[s].values() )
+  seen = set()
+  def dfs(u, flo):
+    if u == s: return flo
+    rem = flo
+    for v in f[u]:
+      c = f[v][u]["cap"] - f[v][u]["flo"]
+      if c > 0 and v not in seen and L.get(v, -2) == L[u]-1:
+        flo_ = dfs(v, min(rem, c))
+        if flo_:
+          f[v][u]["flo"] += flo_; f[u][v]["flo"] -= flo_
+          # return flo_
+          if flo_ < min(rem, c): seen.add(v)
+          rem -= flo_
+          if rem == 0: return flo
+    return flo - rem
+  dfs(t, sum( fsu["cap"] for fsu in f[s].values() ))
+                                                                # }}}1
+
+def _dinic_blocking_flow(L, f, s, t):                            # {{{1
+  st  = [(t,False)]
+  flo = sum( fsu["cap"] for fsu in f[s].values() )
   while st:
-    u, w, b = st.pop()
+    u, b = st.pop()
+    if u == s: return
     if not b:
-      if u == t:
+      st.append((u,True))
+    else:
+      ...
+
+  st  = [(t,False)]
+  flo = { t: sum( fsu["cap"] for fsu in f[s].values() ) }
+  while st:
+    u, b = st.pop()
+    if u == s: return
+    if not b:
+      st.append((u,True))
+      for v in f[u]:
+        c = f[v][u]["cap"] - f[v][u]["flo"]
+        if L.get(v, -1) == L[u]-1 and c > 0:
+          st.append((v,False))
+
+    elif False:
+      for v in f[u]:
+        c = f[v][u]["cap"] - f[v][u]["flo"]
+        if L.get(v, -1) == L[u]-1 and c > 0 and flo[v]:
+          ...
+
         dem[u] = min(sup[w], f[w][u]["cap"] - f[w][u]["flo"])
         sup[w] -= dem[u]
       else:
         st.append((u,w,True))
         if w: sup[u] = min(sup[w], f[w][u]["cap"] - f[w][u]["flo"])
         for v in f[u]:
-          if L.get(v, -1) > L[u]: st.append((v,u,False))
+          if L.get(v, -1) == L[u]+1:
+            st.append((v,u,False))
     else:
       dem[u] = 0
       for v, fuv in f[u].items():
-        if L.get(v, -1) > L[u]:
+        if L.get(v, -1) == L[u]+1:
           fuv["flo"] += dem[v]; f[v][u]["flo"] -= dem[v]
           dem[u] += dem[v]; dem[v] = 0
       if w: sup[w] -= dem[u]
