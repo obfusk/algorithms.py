@@ -10,7 +10,6 @@ Ford-Fulkerson algorithm                                        # {{{2
 
 >>> # {{{ {{{ {{{ {{{ fix vim folds
 >>> import pprint
->>> V = "suvxyzt"
 >>> c = dict(s = dict(u = 15, v = 5, x = 12),
 ...          u = dict(x = 8, v = 10),
 ...          v = dict(z = 8),
@@ -18,54 +17,14 @@ Ford-Fulkerson algorithm                                        # {{{2
 ...          y = dict(t = 15),
 ...          z = dict(t = 10),
 ...          t = dict())
->>> E = dict( (k,sorted(v)) for k,v in c.items() )
->>> G = (V,E); s, t = "st"
->>> def after_pass(path, b, f):
-...   print("b =", b, "path =", path); pprint.pprint(f)
->>> f, max_flow, min_cut = ford_fulkerson(G, s, t, c, after_pass = after_pass)
-b = 5 path = [('s', 'x', False), ('x', 't', False)]
-{'s': {'u': {'capacity': 15, 'flow': 0},
-       'v': {'capacity': 5, 'flow': 0},
-       'x': {'capacity': 12, 'flow': 5}},
- 't': {},
- 'u': {'v': {'capacity': 10, 'flow': 0}, 'x': {'capacity': 8, 'flow': 0}},
- 'v': {'z': {'capacity': 8, 'flow': 0}},
- 'x': {'t': {'capacity': 5, 'flow': 5}, 'y': {'capacity': 5, 'flow': 0}},
- 'y': {'t': {'capacity': 15, 'flow': 0}},
- 'z': {'t': {'capacity': 10, 'flow': 0}}}
-b = 5 path = [('s', 'v', False), ('v', 'z', False), ('z', 't', False)]
-{'s': {'u': {'capacity': 15, 'flow': 0},
-       'v': {'capacity': 5, 'flow': 5},
-       'x': {'capacity': 12, 'flow': 5}},
- 't': {},
- 'u': {'v': {'capacity': 10, 'flow': 0}, 'x': {'capacity': 8, 'flow': 0}},
- 'v': {'z': {'capacity': 8, 'flow': 5}},
- 'x': {'t': {'capacity': 5, 'flow': 5}, 'y': {'capacity': 5, 'flow': 0}},
- 'y': {'t': {'capacity': 15, 'flow': 0}},
- 'z': {'t': {'capacity': 10, 'flow': 5}}}
-b = 5 path = [('s', 'x', False), ('x', 'y', False), ('y', 't', False)]
-{'s': {'u': {'capacity': 15, 'flow': 0},
-       'v': {'capacity': 5, 'flow': 5},
-       'x': {'capacity': 12, 'flow': 10}},
- 't': {},
- 'u': {'v': {'capacity': 10, 'flow': 0}, 'x': {'capacity': 8, 'flow': 0}},
- 'v': {'z': {'capacity': 8, 'flow': 5}},
- 'x': {'t': {'capacity': 5, 'flow': 5}, 'y': {'capacity': 5, 'flow': 5}},
- 'y': {'t': {'capacity': 15, 'flow': 5}},
- 'z': {'t': {'capacity': 10, 'flow': 5}}}
-b = 3 path = [('s', 'u', False), ('u', 'v', False), ('v', 'z', False), ('z', 't', False)]
-{'s': {'u': {'capacity': 15, 'flow': 3},
-       'v': {'capacity': 5, 'flow': 5},
-       'x': {'capacity': 12, 'flow': 10}},
- 't': {},
- 'u': {'v': {'capacity': 10, 'flow': 3}, 'x': {'capacity': 8, 'flow': 0}},
- 'v': {'z': {'capacity': 8, 'flow': 8}},
- 'x': {'t': {'capacity': 5, 'flow': 5}, 'y': {'capacity': 5, 'flow': 5}},
- 'y': {'t': {'capacity': 15, 'flow': 5}},
- 'z': {'t': {'capacity': 10, 'flow': 8}}}
->>> max_flow
+>>> s, t = "st"
+>>> # TODO: (deterministic!) examples of after_pass
+>>> # def after_pass(path, b, f):
+>>> #   print("b =", b, "path =", path); pprint.pprint(f)
+>>> f = ford_fulkerson(c, s, t)
+>>> max_flow(f, s)
 18
->>> cut_a, cut_b = min_cut
+>>> cut_a, cut_b = min_cut(f, s)
 >>> sorted(cut_a), sorted(cut_b)
 (['s', 'u', 'v', 'x'], ['t', 'y', 'z'])
 
@@ -136,7 +95,7 @@ Dinic's algorithm                                               # {{{2
              'y': {'cap': 5, 'flo': 5}},
        'y': {'t': {'cap': 15, 'flo': 5}, 'x': {'cap': 0, 'flo': -5}},
        'z': {'t': {'cap': 10, 'flo': 8}, 'v': {'cap': 0, 'flo': -8}}}}
->>> dinic_max_flow(f, s)
+>>> max_flow(f, s)
 18
 
 >>> s, t = "st"
@@ -148,7 +107,11 @@ Dinic's algorithm                                               # {{{2
 ...       't': {} }
 >>> f = dinic(c, s, t)
 >>> # TODO: (deterministic!) examples of after_pass
->>> dinic_max_flow(f, s)
+>>> max_flow(f, s)
+19
+
+>>> f = ford_fulkerson(c, s, t)
+>>> max_flow(f, s)
 19
 
                                                                 # }}}2
@@ -180,64 +143,56 @@ def _argument_parser():                                         # {{{1
 # === Ford-Fulkerson algorithm ===
 
 # TODO: confirm the algorithm actually works correctly
-# TODO: inline
-def ford_fulkerson(G, s, t, c, after_pass = None):              # {{{1
+# NB: assumes c.keys() == V
+def ford_fulkerson(c, s, t, after_pass = None):                 # {{{1
   """Ford-Fulkerson algorithm."""
-  if isinstance(c, dict): c_, c = c, lambda u, v: c_[u][v]
-  V, E  = G; ET = transpose(G)[1]; f = {}
-  neighbors, rneighbors = lambda u: E[u], lambda u: ET[u]
-  for u in V:   # build residual graph with combined forward & reverse
-    f[u] = {}   # edges; thus we need neighbors, rneighbors & cap
-    for v in E[u]: f[u][v] = dict(capacity = c(u,v), flow = 0)
-  cap   = lambda u, v, rev: f[u][v]["capacity"] - f[u][v]["flow"] \
-                            if not rev else f[v][u]["flow"]
-  path  = find_augmenting_path(s, t, neighbors, rneighbors, cap)
-  while path != None:
-    b = min( cap(*x) for x in path )
-    for u,v,rev in path: (f[v][u] if rev else f[u][v])["flow"] += b
+  f = {} # residual/level graph w/ "reverse" edges
+  for u, cu in c.items():
+    fu = f[u] = {}
+    for v, cuv in cu.items(): fu[v] = dict(cap = cuv, flo = 0)
+  for u, cu in c.items():
+    for v in cu: f.setdefault(v, {})\
+                  .setdefault(u, dict(cap = 0, flo = 0))
+  path = find_augmenting_path(f, s, t)
+  while path is not None:
+    b = min( f[u][v]["cap"] - f[u][v]["flo"] for u,v in path )
+    for u,v in path:
+      f[u][v]["flo"] += b; f[v][u]["flo"] -= b
     if after_pass: after_pass(path, b, f)
-    path = find_augmenting_path(s, t, neighbors, rneighbors, cap)
-  max_flow = sum( f[s][u]["flow"] for u in neighbors(s) )
-  return f, max_flow, min_cut(V, f, s, neighbors, rneighbors, cap)
+    path = find_augmenting_path(f, s, t)
+  return f
                                                                 # }}}1
 
-def find_augmenting_path(s, t, neighbors, rneighbors, cap):     # {{{1
+def find_augmenting_path(f, s, t):                              # {{{1
   """Find a (shortest) augmenting path using BFS."""
   seen, q = set([s]), deque([(s,[])])
-  def process(u, v, rev):
-    if cap(u, v, rev) > 0 and v not in seen:
-      path_ = path + [(u,v,rev)]; seen.add(v); q.append((v,path_))
-      return path_ if v == t else None
   if s == t: return []
   while q:
     u, path = q.popleft()
-    for v in neighbors(u):
-      path_ = process(u, v, False)
-      if path_ != None: return path_
-    for v in rneighbors(u):
-      path_ = process(u, v, True)
-      if path_ != None: return path_
+    for v in f[u]:
+      if f[u][v]["cap"] - f[u][v]["flo"] > 0 and v not in seen:
+        path_ = path + [(u,v)]; seen.add(v); q.append((v,path_))
+        if v == t: return path_
   return None
                                                                 # }}}1
 
-def min_cut(V, f, s, neighbors, rneighbors, cap):               # {{{1
+def min_cut(f, s):                                              # {{{1
   """Find minimum cut using post-Ford-Fulkerson residual graph."""
   cut_a, q = set([s]), deque([s])
-  def process(u, v, rev):
-    if cap(u, v, rev) > 0 and v not in cut_a:
-      cut_a.add(v); q.append(v)
   while q:
     u = q.popleft()
-    for v in  neighbors(u): process(u, v, False)
-    for v in rneighbors(u): process(u, v, True)
-  return cut_a, set(V) - cut_a
+    for v in f[u]:
+      if f[u][v]["cap"] - f[u][v]["flo"] > 0 and v not in cut_a:
+        cut_a.add(v); q.append(v)
+  return cut_a, set(f) - cut_a
                                                                 # }}}1
 
 # === Dinic's algorithm ===
 
-def dinic_max_flow(f, s):
+def max_flow(f, s):
   return sum( fsu["flo"] for fsu in f[s].values() )
 
+# NB: assumes c.keys() == V
 def dinic(c, s, t, after_pass = None):                          # {{{1
   """Dinic's algorithm."""
   f = {} # residual/level graph w/ "reverse" edges

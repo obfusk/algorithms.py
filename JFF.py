@@ -1,7 +1,7 @@
 import sys
 from collections import deque
 
-def ford_fulkerson(c, s, t, after_pass = None):                 # {{{1
+def ford_fulkerson(c, s, t):                                    # {{{1
   """Ford-Fulkerson algorithm."""
   f = {} # residual/level graph w/ "reverse" edges
   for u, cu in c.items():
@@ -15,7 +15,6 @@ def ford_fulkerson(c, s, t, after_pass = None):                 # {{{1
     b = min( f[u][v]["cap"] - f[u][v]["flo"] for u,v in path )
     for u,v in path:
       f[u][v]["flo"] += b; f[v][u]["flo"] -= b
-    if after_pass: after_pass(path, b, f)
     path = find_augmenting_path(f, s, t)
   return f
                                                                 # }}}1
