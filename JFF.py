@@ -41,14 +41,12 @@ c   = dict(s = {}, t = {}); s, t = "st"
 for i, (d, *data) in enumerate( map(int, line.split())
                                 for line in sys.stdin ):
   w = "{}_w".format(i); c[w] = { t:d }
-  for j, (a, q) in enumerate(zip(data, s2q)):
+  for a, q in zip(data, s2q):
     u, v = "{}_q{}".format(i, q), "{}_q{}_".format(i, q)
     c[s].setdefault(u, 0); c[s][u] += a
     c[u] = { v: qsz[q] }; c[v] = { w: min(qsz[q], d) }
     if i > 0:
       v_ = "{}_q{}_".format(i-1, q); c[v_][u] = qsz[q]
-
-# from pprint import pprint; pprint(c)
 
 f = ford_fulkerson(c, s, t)
 

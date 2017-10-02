@@ -220,28 +220,20 @@ def dinic_levels(f, s, t):                                      # {{{1
   return L
                                                                 # }}}1
 
-# TODO: optimise sup, dem?
 def dinic_blocking_flow(L, f, s, t):                            # {{{1
-  st, sup, dem = [(s,None,False)], {}, {}
-  sup[s] = dem[t] = sum( fsu["cap"] for fsu in f[s].values() )
-  while st:
-    u, w, b = st.pop()
-    if not b:
-      if u == t:
-        dem[u] = min(sup[w], f[w][u]["cap"] - f[w][u]["flo"])
-        sup[w] -= dem[u]
-      else:
-        st.append((u,w,True))
-        if w: sup[u] = min(sup[w], f[w][u]["cap"] - f[w][u]["flo"])
-        for v in f[u]:
-          if L.get(v, -1) > L[u]: st.append((v,u,False))
-    else:
-      dem[u] = 0
-      for v, fuv in f[u].items():
-        if L.get(v, -1) > L[u]:
-          fuv["flo"] += dem[v]; f[v][u]["flo"] -= dem[v]
-          dem[u] += dem[v]; dem[v] = 0
-      if w: sup[w] -= dem[u]
+  seen = set()
+  def dfs(u, flo):
+    if u == s: return flo
+    rem = flo
+    for v in f[u]:
+      c = f[v][u]["cap"] - f[v][u]["flo"]; m = min(rem, c)
+      if c > 0 and v not in seen and L.get(v, -2) == L[u]-1:
+        flo_ = dfs(v, m)
+        if flo_ < m: seen.add(v)
+        f[v][u]["flo"] += flo_; f[u][v]["flo"] -= flo_; rem -= flo_
+        if rem == 0: return flo
+    return flo - rem
+  dfs(t, sum( fsu["cap"] for fsu in f[s].values() ))
                                                                 # }}}1
 
 # === Miscellaneous graph algorithms ===
