@@ -52,22 +52,22 @@ def dinic_blocking_flow(L, f, s, t):                            # {{{1
                                                                 # }}}1
 
 sys.stdin.readline()
-ss  = [ int(x)-1 for x in sys.stdin.readline().split() ]
-qq  = list(map(int, sys.stdin.readline().split()))
+s2q = [ int(x)-1 for x in sys.stdin.readline().split() ]
+qsz = list(map(int, sys.stdin.readline().split()))
+
 c   = dict(s = {}, t = {}); s, t = "st"
 
 for i, (d, *data) in enumerate( map(int, line.split())
                                 for line in sys.stdin ):
   w = "{}_w".format(i); c[w] = { t:d }
-  for j, (a, q) in enumerate(zip(data, ss)):
-    u = "{}_s{}_q{}".format(i, j, q)
-    v = "{}_q{}"    .format(i,    q)
-    c[s][u] = a; c[u] = { v: qq[q] }; c[v] = { w: min(qq[q], d) }
+  for j, (a, q) in enumerate(zip(data, s2q)):
+    u, v = "{}_q{}".format(i, q), "{}_q{}_".format(i, q)
+    c[s].setdefault(u, 0); c[s][u] += a
+    c[u] = { v: qsz[q] }; c[v] = { w: min(qsz[q], d) }
     if i > 0:
-      v_ = "{}_q{}".format(i-1, q); c[v_][u] = qq[q]
+      v_ = "{}_q{}_".format(i-1, q); c[v_][u] = qsz[q]
 
-# from pprint import pprint
-# pprint(c)
+# from pprint import pprint; pprint(c)
 
 f = dinic(c, s, t)
 
