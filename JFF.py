@@ -1,51 +1,37 @@
 import sys
 from collections import deque
 
-def ford_fulkerson(G, s, t, c, after_pass = None):              # {{{1
+def ford_fulkerson(c, s, t, after_pass = None):                 # {{{1
   """Ford-Fulkerson algorithm."""
-  if isinstance(c, dict): c_, c = c, lambda u, v: c_[u][v]
-  V, E  = G; ET = transpose(G)[1]; f = {}
-  neighbors, rneighbors = lambda u: E[u], lambda u: ET[u]
-  for u in V:   # build residual graph with combined forward & reverse
-    f[u] = {}   # edges; thus we need neighbors, rneighbors & cap
-    for v in E[u]: f[u][v] = dict(capacity = c(u,v), flow = 0)
-  cap   = lambda u, v, rev: f[u][v]["capacity"] - f[u][v]["flow"] \
-                            if not rev else f[v][u]["flow"]
-  path  = find_augmenting_path(s, t, neighbors, rneighbors, cap)
-  while path != None:
-    b = min( cap(*x) for x in path )
-    for u,v,rev in path: (f[v][u] if rev else f[u][v])["flow"] += b
+  f = {} # residual/level graph w/ "reverse" edges
+  for u, cu in c.items():
+    fu = f[u] = {}
+    for v, cuv in cu.items(): fu[v] = dict(cap = cuv, flo = 0)
+  for u, cu in c.items():
+    for v in cu: f.setdefault(v, {})\
+                  .setdefault(u, dict(cap = 0, flo = 0))
+  path = find_augmenting_path(f, s, t)
+  while path is not None:
+    b = min( f[u][v]["cap"] - f[u][v]["flo"] for u,v in path )
+    for u,v in path:
+      f[u][v]["flo"] += b; f[v][u]["flo"] -= b
     if after_pass: after_pass(path, b, f)
-    path = find_augmenting_path(s, t, neighbors, rneighbors, cap)
+    path = find_augmenting_path(f, s, t)
   return f
                                                                 # }}}1
 
-def find_augmenting_path(s, t, neighbors, rneighbors, cap):     # {{{1
+def find_augmenting_path(f, s, t):                              # {{{1
   """Find a (shortest) augmenting path using BFS."""
   seen, q = set([s]), deque([(s,[])])
-  def process(u, v, rev):
-    if cap(u, v, rev) > 0 and v not in seen:
-      path_ = path + [(u,v,rev)]; seen.add(v); q.append((v,path_))
-      return path_ if v == t else None
   if s == t: return []
   while q:
     u, path = q.popleft()
-    for v in neighbors(u):
-      path_ = process(u, v, False)
-      if path_ != None: return path_
-    for v in rneighbors(u):
-      path_ = process(u, v, True)
-      if path_ != None: return path_
+    for v in f[u]:
+      if f[u][v]["cap"] - f[u][v]["flo"] > 0 and v not in seen:
+        path_ = path + [(u,v)]; seen.add(v); q.append((v,path_))
+        if v == t: return path_
   return None
                                                                 # }}}1
-
-def transpose(G):
-  """Transpose graph."""
-  V, E = G; ET = {}
-  for u in V: ET[u] = []
-  for u, vs in E.items():
-    for v in vs: ET[v].append(u)
-  return (V, ET)
 
 sys.stdin.readline()
 s2q = [ int(x)-1 for x in sys.stdin.readline().split() ]
@@ -70,10 +56,10 @@ for i, (d, *data) in enumerate( map(int, line.split())
 
 E = dict( (k,sorted(v)) for k,v in c.items() )
 G = (V,E)
-f = ford_fulkerson(G, s, t, c)
+f = ford_fulkerson(c, s, t)
 
 for fsu in f[s].values():
-  if fsu["flow"] != fsu["capacity"]:
+  if fsu["flo"] != fsu["cap"]:
     print("impossible"); break
 else:
   print("possible")
